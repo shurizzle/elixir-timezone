@@ -6,7 +6,7 @@ Timezone is a native elixir library for working with timezones. It parses the Ol
 Run update_db.sh script
 
 # License
-AGPL
+Apache 2
 
 # Status
 Developing
