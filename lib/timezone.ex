@@ -219,15 +219,12 @@ defrecord Timezone, name: nil, zones: [] do
                       append.(:rules, name, Keyword.put(records, :prev, nil), parse_rule.(data))
 
                     ["Link",name,link] ->
-                      name = Regex.replace(%r/^Etc\//, name, "")
-                      link = Regex.replace(%r/^Etc\//, link, "")
                       Keyword.put Keyword.put(records, :prev, nil), :links, [{name, link}| Keyword.get records, :links, []]
 
                     ["Leap"|_] ->
                       Keyword.put records, :prev, nil
 
                     ["Zone",name|data] ->
-                      name = Regex.replace(%r/^Etc\//, name, "")
                       append.(:zones, name, Keyword.put(records, :prev, name), parse_zone.(data))
                     data ->
                       case records[:prev] do
