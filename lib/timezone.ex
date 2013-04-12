@@ -244,8 +244,8 @@ defrecord Timezone, name: nil, zones: [] do
       { key, { Timezone, key, Enum.reverse value } }
   end
 
-  zones = Enum.reduce records[:links], zones, fn({dst,src}, z) ->
-    [{ src, z[dst] } | z]
+  zones = Enum.reduce records[:links], zones, fn({from,to}, z) ->
+    [{ to, z[from] } | z]
   end
 
   def zones(), do: unquote Macro.escape zones
