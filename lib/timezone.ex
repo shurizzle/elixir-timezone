@@ -168,7 +168,7 @@ defrecord Timezone, name: nil, zones: [] do
 
   parse_zone = fn
     [gmtoff,rules,format|until] ->
-      offset = parse_time_val.(gmtoff)
+      offset = to_offset.(parse_time_val.(gmtoff))
       rules =
         case rules do
           "-" -> nil
