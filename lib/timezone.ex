@@ -247,15 +247,16 @@ defrecord Timezone, name: nil, zones: [] do
   zones = Enum.reduce records[:links], zones, fn({from,to}, z) ->
     [{ to, z[from] } | z]
   end
+  zones = HashDict.new zones
 
   def zones(), do: unquote Macro.escape zones
-  def get(name), do: zones[name]
+  def get(name), do: HashDict.get zones, name
 
   def rulesets() do
-    unquote Macro.escape Enum.map records[:rules], fn({key, value}) ->
+    unquote Macro.escape HashDict.new Enum.map records[:rules], fn({key, value}) ->
       { key, Timezone.RuleSet.new name: key, rules: Enum.reverse value }
     end
   end
-  def ruleset(name), do: rulesets[name]
+  def ruleset(name), do: HashDict.get rulesets, name
 
 end
