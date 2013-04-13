@@ -28,9 +28,56 @@ defrecord Timezone, name: nil, zones: [] do
   end
 
   defrecord Rule, year: nil, month: nil, day: nil, time: nil, save: nil, letters: nil do
+    def year_contains(_, Rule[year: Range[first: :min, last: :max]]), do: true
+    def year_contains(year, Rule[year: Range[first: :min, last: x]]) when x >= year, do: true
+    def year_contains(year, Rule[year: Range[first: x, last: :max]]) when x <= year, do: true
+    def year_contains(year, Rule[year: Range[first: x1, last: x2]]) when year >= x1 and year <= x2, do: true
+    def year_contains(_, _), do: false
+
+    def compile_for_year(year, Rule[] = self) do
+      case year_contains(year, self) do
+        true ->
+          day =
+            case self.day do
+              {:last, d} -> Timezone.last_weekday_of_the_month(year, self.month, d)
+              {:>=, d, i} -> Timezone.first_weekday_of_the_month_ge(year, self.month, d, i)
+              {:<=, d, i} -> Timezone.first_weekday_of_the_month_le(year, self.month, d, i)
+              d -> d
+            end
+          {{year, self.month, day}, self.time}
+        false -> nil
+      end
+    end
+
+    def contains({{y,_,_},{_,_,_}} = date, Rule[] = self) do
+      case compile_for_year(y, self) do
+        nil -> false
+        d -> :calendar.datetime_to_gregorian_seconds(date) >= :calendar.datetime_to_gregorian_seconds(d)
+      end
+    end
   end
 
   defrecord RuleSet, name: nil, rules: [] do
+    def in_range({{y,_,_},{_,_,_}}=first, last, RuleSet[] = self) do
+      res = Enum.drop_while self.rules, fn(r) ->
+        case r.year do
+          :min .. :max -> false
+          :min .. x when y < x -> false
+          :min .. ^y -> !r.contains(first)
+          x .. :max when y > x -> false
+          ^y .. :max -> !r.contains(first)
+          x1 .. x2 when y > x1 and y < x2 -> false
+          Range[first: ^y] -> !r.contains(first)
+          Range[last: ^y] -> !r.contains(first)
+          ^y -> !r.contains(first)
+          _ -> true
+        end
+      end
+
+      Enum.take_while res, fn(r) ->
+        r.contains(last)
+      end
+    end
   end
 
   parse_range = fn
