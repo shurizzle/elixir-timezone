@@ -24,7 +24,7 @@ defrecord Timezone, name: nil, zones: [] do
     first_weekday_of_the_month year, month, weekday, &1 <= day
   end
 
-  defrecord Zone, offset: 0, rule: nil, format: nil, until: nil do
+  defrecord Zone, offset: 0, rule: nil, format: nil, time: nil do
   end
 
   defrecord Rule, year: nil, month: nil, day: nil, time: nil, save: nil, letters: nil do
@@ -236,7 +236,7 @@ defrecord Timezone, name: nil, zones: [] do
             nil -> nil
         end
 
-      Zone.new offset: offset, rules: rules, format: format, until: until
+      {offset, rules, format, until}
   end
 
   append = fn
@@ -288,7 +288,24 @@ defrecord Timezone, name: nil, zones: [] do
   end
 
   zones = Enum.map records[:zones], fn({key, value}) ->
-      { key, { Timezone, key, Enum.reverse value } }
+    zs = Enum.sort value, fn({_,_,_,u1}, {_,_,_,u2}) ->
+      cond do
+        nil?(u1) -> false
+        nil?(u2) -> true
+        true -> :calendar.datetime_to_gregorian_seconds(u1) < :calendar.datetime_to_gregorian_seconds(u2)
+      end
+    end
+    {zs,_} = Enum.map_reduce zs, :min, fn({offset,rules,format,until}, acc) ->
+      u =
+        case until do
+          nil -> :max
+          _ ->
+            :calendar.gregorian_seconds_to_datetime(:calendar.datetime_to_gregorian_seconds(until) - 1)
+        end
+      { Zone.new(offset: offset, rules: rules, format: format, time: acc .. u), until  }
+    end
+
+    { key, { Timezone, key, zs } }
   end
 
   zones = Enum.reduce records[:links], zones, fn({from,to}, z) ->
