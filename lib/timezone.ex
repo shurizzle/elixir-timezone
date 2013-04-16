@@ -314,7 +314,8 @@ defrecord Timezone, name: nil, zones: [] do
   zones = HashDict.new zones
 
   def zones(), do: unquote Macro.escape zones
-  def get(name), do: HashDict.get zones, name
+  def get(name, default // nil), do: HashDict.get zones, name, default
+  def get!(name), do: HashDict.get! zones, name
 
   def rulesets() do
     unquote Macro.escape HashDict.new Enum.map records[:rules], fn({key, value}) ->
